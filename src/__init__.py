@@ -1,0 +1,2 @@
+"""Bilingual regulatory checker package."""
+
