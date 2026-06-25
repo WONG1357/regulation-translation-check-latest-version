@@ -1,0 +1,1 @@
+# regulation-translation-check-latest-version
