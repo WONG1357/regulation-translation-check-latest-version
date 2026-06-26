@@ -305,11 +305,37 @@ def _is_change_history_table(table) -> bool:
         return False
     header = " ".join(normalize_text(cell.text) for cell in table.rows[0].cells)
     compact_header = _normalise_heading_key(header)
+    if _is_change_history_continuation_table(table):
+        return True
     return (
         "版本rev" in compact_header
         and "更改描述changedescription" in compact_header
         and "生效日期effectivedate" in compact_header
     )
+
+
+def _is_revision_label(value: str) -> bool:
+    return bool(re.fullmatch(r"[A-Z]", normalize_text(value)))
+
+
+def _is_effective_date(value: str) -> bool:
+    return bool(re.search(r"\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b", normalize_text(value)))
+
+
+def _is_change_history_continuation_table(table) -> bool:
+    if len(table.columns) != 3:
+        return False
+    rows = [
+        [normalize_text(cell.text) for cell in row.cells]
+        for row in table.rows
+        if any(normalize_text(cell.text) for cell in row.cells)
+    ]
+    if not rows:
+        return False
+    revision_rows = [row for row in rows if row and _is_revision_label(row[0])]
+    if len(revision_rows) != len(rows):
+        return False
+    return any(len(row) >= 3 and _is_effective_date(row[2]) for row in revision_rows)
 
 
 def _is_regulatory_matrix_table(table) -> bool:

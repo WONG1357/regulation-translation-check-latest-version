@@ -52,6 +52,50 @@ def test_docx_loader_classifies_toc_and_skips_headings_while_preserving_body_ord
     assert all(block.page == 7 for block in body_blocks)
 
 
+def test_docx_loader_classifies_headerless_change_history_continuation_table(tmp_path):
+    path = tmp_path / "manual.docx"
+    doc = Document()
+    table = doc.add_table(rows=2, cols=3)
+    table.rows[0].cells[0].text = "N"
+    table.rows[0].cells[1].text = (
+        "-更新6.3.1，增加CR/DR的申请流程； "
+        "- Update 6.3.1 to add CR/DR application process."
+    )
+    table.rows[0].cells[2].text = "2023-05-18"
+    table.rows[1].cells[0].text = "O"
+    table.rows[1].cells[1].text = (
+        "-增加6.3.17，说明草稿版本的存在状态 "
+        "- Add 6.3.17, describe the draft version."
+    )
+    table.rows[1].cells[2].text = "2023-08-03"
+    doc.save(path)
+
+    _, blocks = load_document(path)
+
+    assert len(blocks) == 2
+    assert all(block.content_class == "change_history" for block in blocks)
+    assert all(block.block_type == "change_history" for block in blocks)
+
+
+def test_docx_loader_keeps_ordinary_three_column_table_as_bilingual_prose(tmp_path):
+    path = tmp_path / "manual.docx"
+    doc = Document()
+    table = doc.add_table(rows=2, cols=3)
+    table.rows[0].cells[0].text = "QSP0704"
+    table.rows[0].cells[1].text = "设计与开发控制"
+    table.rows[0].cells[2].text = "Design and Development Control"
+    table.rows[1].cells[0].text = "WI-04-QAD-01"
+    table.rows[1].cells[1].text = "文件编码指引"
+    table.rows[1].cells[2].text = "Document Numbering Instruction"
+    doc.save(path)
+
+    _, blocks = load_document(path)
+
+    assert len(blocks) == 2
+    assert all(block.content_class == "bilingual_prose" for block in blocks)
+    assert all(block.block_type == "table_row" for block in blocks)
+
+
 def test_page_range_filter_is_applied_after_docx_page_assignment(tmp_path):
     path = tmp_path / "manual.docx"
     doc = Document()

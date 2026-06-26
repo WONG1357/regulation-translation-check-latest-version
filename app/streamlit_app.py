@@ -327,10 +327,8 @@ if result:
             and finding.pair_id
         }
         if show_cards:
-            for pair in alignment_pairs[:300]:
+            for pair in alignment_pairs:
                 st.markdown(pair_card(pair, mismatch_ids), unsafe_allow_html=True)
-            if len(alignment_pairs) > 300:
-                st.caption(f"Showing the first 300 of {len(alignment_pairs)} pairs.")
 
     with tabs[3]:
         st.subheader("Selected-regulation coverage matrix")
