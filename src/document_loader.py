@@ -338,6 +338,20 @@ def _is_change_history_continuation_table(table) -> bool:
     return any(len(row) >= 3 and _is_effective_date(row[2]) for row in revision_rows)
 
 
+def _revision_id_from_cells(cells: list[str]) -> str | None:
+    if cells and _is_revision_label(cells[0]):
+        return cells[0]
+    return None
+
+
+def _effective_date_from_cells(cells: list[str]) -> str | None:
+    for cell in cells:
+        match = re.search(r"\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b", normalize_text(cell))
+        if match:
+            return match.group(0)
+    return None
+
+
 def _is_regulatory_matrix_table(table) -> bool:
     if not table.rows:
         return False
@@ -500,6 +514,10 @@ def _load_docx(path: Path, max_pages: int | None = None):
                 }:
                     current_section = section
                 if text:
+                    revision_id = _revision_id_from_cells(cells) if is_change_history else None
+                    effective_date = (
+                        _effective_date_from_cells(cells) if is_change_history else None
+                    )
                     if table_class == "regulatory_matrix":
                         block_page = section_pages.get("0.7", row_page)
                     elif table_class == "regulatory_references":
@@ -539,6 +557,8 @@ def _load_docx(path: Path, max_pages: int | None = None):
                             content_class=table_class,
                             ignored=table_class
                             in {"table_of_contents", "approval_table"},
+                            revision_id=revision_id,
+                            effective_date=effective_date,
                             raw_page=row_page,
                             section_level=_section_level(section),
                         )

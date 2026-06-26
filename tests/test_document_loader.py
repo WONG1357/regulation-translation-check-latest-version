@@ -75,6 +75,8 @@ def test_docx_loader_classifies_headerless_change_history_continuation_table(tmp
     assert len(blocks) == 2
     assert all(block.content_class == "change_history" for block in blocks)
     assert all(block.block_type == "change_history" for block in blocks)
+    assert [block.revision_id for block in blocks] == ["N", "O"]
+    assert [block.effective_date for block in blocks] == ["2023-05-18", "2023-08-03"]
 
 
 def test_docx_loader_keeps_ordinary_three_column_table_as_bilingual_prose(tmp_path):

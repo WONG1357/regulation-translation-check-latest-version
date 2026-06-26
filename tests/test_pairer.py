@@ -172,6 +172,77 @@ def test_same_block_delimited_row_uses_translation_cells_and_cleans_tags():
     assert "<td>" not in pair.chinese_text
 
 
+def test_change_history_row_ignores_revision_letter_and_date_cells():
+    block = ExtractedBlock(
+        block_id="rev_a",
+        page=2,
+        block_type=BlockType.change_history,
+        language=Language.mixed,
+        text="A | 首次发行First issue | 2010-04-01",
+        content_class="change_history",
+        table_id="history",
+        row_index=1,
+        revision_id="A",
+        effective_date="2010-04-01",
+    )
+
+    pair = pair_blocks([block], {"rev_a": "First issue"})[0]
+
+    assert pair.chinese_text == "首次发行"
+    assert pair.english_text == "First issue"
+    assert pair.machine_translated_english == "First issue"
+    assert pair.pair_status == PairStatus.confirmed
+    assert pair.revision_id == "A"
+    assert pair.effective_date == "2010-04-01"
+
+
+def test_same_block_table_row_ignores_procedure_code_cell():
+    block = ExtractedBlock(
+        block_id="procedure",
+        page=5,
+        block_type=BlockType.table_row,
+        language=Language.mixed,
+        text="WI-04-QAD-01 | 文件编码指引Document Numbering Instruction",
+        table_id="references",
+        row_index=1,
+    )
+
+    pair = pair_blocks([block], {"procedure": "Document Numbering Instruction"})[0]
+
+    assert pair.chinese_text == "文件编码指引"
+    assert pair.english_text == "Document Numbering Instruction"
+    assert pair.pair_status == PairStatus.confirmed
+
+
+def test_same_block_table_row_emits_all_bilingual_cells():
+    block = ExtractedBlock(
+        block_id="document_types",
+        page=5,
+        block_type=BlockType.table_row,
+        language=Language.mixed,
+        text="品质手册 Quality Manual | 产品图纸 Product Drawings",
+        table_id="document_types",
+        row_index=1,
+    )
+
+    pairs = [
+        pair
+        for pair in pair_blocks(
+            [block],
+            translations={
+                "document_types": "Quality Manual | Product Drawings",
+            },
+        )
+        if pair.chinese_text
+    ]
+
+    assert [(pair.chinese_text, pair.english_text) for pair in pairs] == [
+        ("品质手册", "Quality Manual"),
+        ("产品图纸", "Product Drawings"),
+    ]
+    assert all(pair.pair_status == PairStatus.confirmed for pair in pairs)
+
+
 def test_same_block_compact_label_keeps_languages_separate():
     block = ExtractedBlock(
         block_id="planning",
